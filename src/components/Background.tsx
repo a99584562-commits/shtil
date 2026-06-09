@@ -34,11 +34,6 @@ export function Background({ time }: { time: TimeOfDay }) {
           animationDelay: '-9s',
         }}
       />
-      {/* faint luminous horizon line */}
-      <div
-        className="absolute left-0 right-0 top-[34%] h-px opacity-40 animate-shimmer"
-        style={{ background: `linear-gradient(90deg, transparent, ${p.glowB}, transparent)` }}
-      />
       {/* subtle film grain for a physical, non-digital feel */}
       <div
         className="absolute inset-0 opacity-[0.04] mix-blend-soft-light"
