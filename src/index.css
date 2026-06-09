@@ -33,18 +33,6 @@
   }
 }
 
-/* Slow drift of the caustic light net. */
-@keyframes causticsDrift {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1.4) rotate(0deg);
-  }
-  50% {
-    transform: translate3d(-4%, 3%, 0) scale(1.55) rotate(3deg);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) scale(1.4) rotate(0deg);
-  }
-}
 
 html,
 body,
@@ -130,8 +118,7 @@ body {
 /* User-controlled "less motion": stop ambient background drift, keep the
    breathing orb (that motion is the practice itself). */
 .reduce-motion .animate-driftSlow,
-.reduce-motion .animate-shimmer,
-.reduce-motion .caustics-layer {
+.reduce-motion .animate-shimmer {
   animation: none !important;
 }
 .reduce-motion .animate-fadeUp {

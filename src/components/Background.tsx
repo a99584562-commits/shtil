@@ -1,14 +1,9 @@
 import { PALETTES } from '../lib/time'
 import type { TimeOfDay } from '../types'
 
-// Tileable caustic light-net texture (feTurbulence shaped into thin bright
-// filaments). Drawn once, then only transformed — cheap to animate.
-const CAUSTICS =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='560'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.009 0.014' numOctaves='2' seed='6' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.62 0 0 0 0 0.86 0 0 0 0 0.84 1.7 0 0 0 -0.98'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E\")"
-
 /**
  * Living "water & sky" backdrop: time-of-day hues, drifting glows with parallax,
- * a slow caustic light-net, a vignette and faint grain. Never intercepts touches.
+ * a vignette and faint grain. Never intercepts touches.
  */
 export function Background({ time }: { time: TimeOfDay }) {
   const p = PALETTES[time]
@@ -45,21 +40,6 @@ export function Background({ time }: { time: TimeOfDay }) {
         <div
           className="absolute right-[-25%] top-[25%] h-[80vh] w-[80vh] rounded-full blur-3xl animate-driftSlow"
           style={{ background: `radial-gradient(circle, ${p.glowB} 0%, transparent 65%)`, animationDelay: '-9s' }}
-        />
-      </div>
-
-      {/* caustics: sunlight through water (parallax + slow drift) */}
-      <div
-        className="absolute inset-0"
-        style={{ transform: 'translate3d(calc(var(--px) * 0.6), calc(var(--py) * 0.6), 0)' }}
-      >
-        <div
-          className="caustics-layer absolute inset-[-30%] opacity-[0.5] mix-blend-screen"
-          style={{
-            backgroundImage: CAUSTICS,
-            backgroundSize: '460px 460px',
-            animation: 'causticsDrift 26s ease-in-out infinite',
-          }}
         />
       </div>
 
