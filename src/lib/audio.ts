@@ -13,6 +13,7 @@ class AudioEngine {
   private ambient: Maybe<{ stop: () => void }> = null
   private analyser: Maybe<AnalyserNode> = null
   private levelBuf: Uint8Array<ArrayBuffer> | null = null
+  private wired = false
 
   /** Create/resume the context + unlock iOS. Call from a user gesture. */
   async ensure(): Promise<boolean> {
@@ -29,8 +30,11 @@ class AudioEngine {
       this.analyser.fftSize = 256
       this.levelBuf = new Uint8Array(this.analyser.frequencyBinCount)
       this.master.connect(this.analyser)
+      this.wireResumeGuards()
     }
-    if (this.ctx.state === 'suspended') {
+    // Resume from ANY non-running state — covers iOS 'suspended' and 'interrupted'
+    // (after a call, lock screen, app switch, or another app grabbing audio).
+    if (this.ctx.state !== 'running') {
       try {
         await this.ctx.resume()
       } catch {
@@ -50,6 +54,25 @@ class AudioEngine {
     return true
   }
 
+  /** Best-effort resume — fire-and-forget; queued sounds play once it resumes. */
+  private kick() {
+    if (this.ctx && this.ctx.state !== 'running') {
+      this.ctx.resume().catch(() => {})
+    }
+  }
+
+  /** Auto-recover the context when the app returns, on tap, or on iOS interruption. */
+  private wireResumeGuards() {
+    if (this.wired || typeof document === 'undefined') return
+    this.wired = true
+    const resume = () => this.kick()
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) resume()
+    })
+    window.addEventListener('pointerdown', resume, { passive: true })
+    this.ctx?.addEventListener('statechange', resume)
+  }
+
   private now(): number {
     return this.ctx ? this.ctx.currentTime : 0
   }
@@ -57,6 +80,7 @@ class AudioEngine {
   /** Soft singing-bowl tone: fundamental plus a couple of inharmonic partials, long decay. */
   bell(freq = 432, peak = 0.55) {
     if (!this.ctx || !this.master) return
+    this.kick()
     const t = this.now()
     const partials = [
       { ratio: 1, gain: 1, decay: 4.2 },
@@ -85,6 +109,7 @@ class AudioEngine {
   /** Very gentle cue at a breath phase change. */
   cue(direction: 'rise' | 'fall' | 'hold') {
     if (!this.ctx || !this.master) return
+    this.kick()
     const t = this.now()
     const base = direction === 'rise' ? 396 : direction === 'fall' ? 297 : 352
     const osc = this.ctx.createOscillator()
@@ -107,6 +132,7 @@ class AudioEngine {
    */
   startAmbient() {
     if (!this.ctx || !this.master || this.ambient) return
+    this.kick()
     const ctx = this.ctx
     const t0 = this.now()
 
