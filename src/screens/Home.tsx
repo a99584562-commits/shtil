@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PRACTICES, practiceById } from '../data/practices'
 import { greeting, subline } from '../lib/time'
 import { computeStats, useSessions } from '../lib/store'
@@ -11,6 +11,13 @@ const GROUPS: { key: TimeOfDay; label: string; sub: string; ids: string[] }[] = 
   { key: 'day', label: 'День', sub: 'сброс стресса и фокус', ids: ['box', 'ground', 'pause'] },
   { key: 'evening', label: 'Вечер', sub: 'замедлиться и уснуть', ids: ['relax478', 'bodyscan'] },
 ]
+
+// Each tab tints the liquid indicator's glow as it flows between them.
+const TAB_ACCENT: Record<string, string> = {
+  morning: '#5fd6d0',
+  day: '#8fc7e0',
+  evening: '#f4b88f',
+}
 
 const SUGGESTION: Record<TimeOfDay, string> = {
   morning: 'coherent',
@@ -42,9 +49,35 @@ export function Home({
 
   // Segmented tabs instead of a long scroll — default to the current part of day.
   const [tab, setTab] = useState<TimeOfDay>(nowGroup)
-  const activeIndex = GROUPS.findIndex((g) => g.key === tab)
+  const indexOf = (k: TimeOfDay) => GROUPS.findIndex((g) => g.key === k)
+  const activeIndex = indexOf(tab)
   const activeGroup = GROUPS[activeIndex] ?? GROUPS[0]
   const items = activeGroup.ids.map((id) => practiceById(id)).filter(Boolean) as Practice[]
+
+  // Liquid-glass indicator: a droplet that stretches across both tabs, then
+  // settles into the target — flowing from button to button.
+  const segAt = (a: number, span: number) => ({
+    left: `calc(4px + ${a} * (100% - 8px) / 3)`,
+    width: `calc(${span} * (100% - 8px) / 3)`,
+  })
+  const [box, setBox] = useState(() => segAt(indexOf(nowGroup), 1))
+  const morphTimer = useRef(0)
+  useEffect(() => () => clearTimeout(morphTimer.current), [])
+
+  function pick(key: TimeOfDay) {
+    const next = indexOf(key)
+    const prev = activeIndex
+    if (next !== prev) {
+      if (document.documentElement.classList.contains('reduce-motion')) {
+        setBox(segAt(next, 1))
+      } else {
+        setBox(segAt(Math.min(prev, next), Math.abs(next - prev) + 1))
+        clearTimeout(morphTimer.current)
+        morphTimer.current = window.setTimeout(() => setBox(segAt(next, 1)), 190)
+      }
+    }
+    setTab(key)
+  }
 
   return (
     <div className="mx-auto min-h-[100dvh] w-full max-w-[480px] px-5 pb-16">
@@ -97,20 +130,33 @@ export function Home({
         <div className="relative grid grid-cols-3 rounded-full p-1 glass">
           <span
             aria-hidden
-            className="absolute bottom-1 top-1 rounded-full glass-strong transition-transform duration-500 ease-fluid"
-            style={{ left: 4, width: 'calc((100% - 8px) / 3)', transform: `translateX(${activeIndex * 100}%)` }}
+            className="pointer-events-none absolute bottom-1 top-1 rounded-full"
+            style={{
+              left: box.left,
+              width: box.width,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(207,238,240,0.07))',
+              border: '1px solid rgba(255,255,255,0.22)',
+              boxShadow: `inset 0 1px 1px rgba(255,255,255,0.5), inset 0 -3px 8px rgba(255,255,255,0.05), 0 8px 24px -8px ${TAB_ACCENT[tab]}`,
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              transition:
+                'left 440ms cubic-bezier(0.32,0.72,0,1), width 440ms cubic-bezier(0.32,0.72,0,1), box-shadow 600ms ease',
+            }}
           />
           {GROUPS.map((g) => (
             <button
               key={g.key}
-              onClick={() => setTab(g.key)}
+              onClick={() => pick(g.key)}
               className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full py-2.5 text-[13px] font-medium transition-colors duration-300 ${
                 tab === g.key ? 'text-foam' : 'text-foam/55'
               }`}
             >
               {g.label}
               {g.key === nowGroup && (
-                <span className="h-1.5 w-1.5 rounded-full bg-glow-cyan" />
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ background: TAB_ACCENT[nowGroup], boxShadow: `0 0 6px ${TAB_ACCENT[nowGroup]}` }}
+                />
               )}
             </button>
           ))}
