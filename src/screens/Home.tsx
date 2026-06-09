@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { PRACTICES, practiceById } from '../data/practices'
 import { greeting, subline } from '../lib/time'
 import { computeStats, useSessions } from '../lib/store'
@@ -38,6 +39,12 @@ export function Home({
   const stats = computeStats(sessions)
   const suggested = practiceById(SUGGESTION[time]) ?? PRACTICES[0]
   const nowGroup = displayGroup(time)
+
+  // Segmented tabs instead of a long scroll — default to the current part of day.
+  const [tab, setTab] = useState<TimeOfDay>(nowGroup)
+  const activeIndex = GROUPS.findIndex((g) => g.key === tab)
+  const activeGroup = GROUPS[activeIndex] ?? GROUPS[0]
+  const items = activeGroup.ids.map((id) => practiceById(id)).filter(Boolean) as Practice[]
 
   return (
     <div className="mx-auto min-h-[100dvh] w-full max-w-[480px] px-5 pb-16">
@@ -85,30 +92,43 @@ export function Home({
         <PracticeCard practice={suggested} onStart={onOpen} prominent />
       </section>
 
-      {/* groups by time of day */}
-      {GROUPS.map((g, gi) => {
-        const items = g.ids.map((id) => practiceById(id)).filter(Boolean) as Practice[]
-        const isNow = g.key === nowGroup
-        return (
-          <section
-            key={g.key}
-            className="mt-9 animate-fadeUp"
-            style={{ animationDelay: `${120 + gi * 60}ms` }}
-          >
-            <div className="mb-3 flex items-baseline justify-between px-1">
-              <h2 className="font-serif text-lg text-foam/90">{g.label}</h2>
-              <span className="text-[11px] text-foam/45">
-                {isNow ? 'сейчас' : g.sub}
-              </span>
-            </div>
-            <div className="flex flex-col gap-3">
-              {items.map((p) => (
-                <PracticeCard key={p.id} practice={p} onStart={onOpen} />
-              ))}
-            </div>
-          </section>
-        )
-      })}
+      {/* practices by time of day — segmented, only the chosen part is shown */}
+      <section className="mt-9 animate-fadeUp" style={{ animationDelay: '120ms' }}>
+        <div className="relative grid grid-cols-3 rounded-full p-1 glass">
+          <span
+            aria-hidden
+            className="absolute bottom-1 top-1 rounded-full glass-strong transition-transform duration-500 ease-fluid"
+            style={{ left: 4, width: 'calc((100% - 8px) / 3)', transform: `translateX(${activeIndex * 100}%)` }}
+          />
+          {GROUPS.map((g) => (
+            <button
+              key={g.key}
+              onClick={() => setTab(g.key)}
+              className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full py-2.5 text-[13px] font-medium transition-colors duration-300 ${
+                tab === g.key ? 'text-foam' : 'text-foam/55'
+              }`}
+            >
+              {g.label}
+              {g.key === nowGroup && (
+                <span className="h-1.5 w-1.5 rounded-full bg-glow-cyan" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-3 mt-4 flex items-baseline justify-between px-1">
+          <h2 className="font-serif text-lg tracking-tight text-foam/90">{activeGroup.label}</h2>
+          <span className="text-[11px] text-foam/45">
+            {activeGroup.key === nowGroup ? 'сейчас' : activeGroup.sub}
+          </span>
+        </div>
+
+        <div key={tab} className="flex flex-col gap-3 animate-fadeUp">
+          {items.map((p) => (
+            <PracticeCard key={p.id} practice={p} onStart={onOpen} />
+          ))}
+        </div>
+      </section>
 
       <p className="pb-safe mt-10 text-center text-[11px] leading-relaxed text-foam/35">
         Не медицинская рекомендация. Просто тихое место, чтобы вернуть внимание себе.
