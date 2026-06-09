@@ -5,6 +5,7 @@ import { TopBar } from '../components/TopBar'
 import { audio } from '../lib/audio'
 import { logSession } from '../lib/store'
 import { useIdleBreath } from '../lib/useIdleBreath'
+import { requestTilt } from '../lib/parallax'
 
 type Stage = 'ready' | 'breath' | 'reflect' | 'done'
 
@@ -70,6 +71,7 @@ export function Pause({ practice, onDone }: { practice: Practice; onDone: () => 
   }, [stage])
 
   async function begin() {
+    requestTilt()
     await audio.ensure()
     audio.cue('rise')
     started.current = performance.now()

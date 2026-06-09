@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Background } from './components/Background'
+import { TapRipples } from './components/TapRipples'
+import { initParallax } from './lib/parallax'
 import { Home } from './screens/Home'
 import { BreathingSession } from './screens/BreathingSession'
 import { TimerSession } from './screens/TimerSession'
@@ -33,6 +35,11 @@ export default function App() {
     document.documentElement.classList.toggle('reduce-motion', settings.reduceMotion)
   }, [settings.reduceMotion])
 
+  // Living-wallpaper parallax (pointer on desktop, tilt on phone).
+  useEffect(() => {
+    initParallax()
+  }, [])
+
   const home = () => setRoute({ name: 'home' })
   const open = (practice: Practice) => setRoute({ name: 'session', practice })
 
@@ -55,6 +62,7 @@ export default function App() {
   return (
     <>
       <Background time={time} />
+      <TapRipples />
       <main key={routeKey} className="relative">
         {route.name === 'home' && (
           <Home

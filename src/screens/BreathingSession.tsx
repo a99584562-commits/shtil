@@ -6,6 +6,7 @@ import { TopBar } from '../components/TopBar'
 import { audio } from '../lib/audio'
 import { logSession, useSettings } from '../lib/store'
 import { useIdleBreath } from '../lib/useIdleBreath'
+import { requestTilt } from '../lib/parallax'
 
 type Stage = 'ready' | 'running' | 'paused' | 'done'
 
@@ -25,13 +26,14 @@ export function BreathingSession({
   const totalDur = cycleDur * totalCycles
 
   const [stage, setStage] = useState<Stage>('ready')
-  const [view, setView] = useState({ scale: 0, label: 'Готовься', phaseLeft: 0, cycle: 1, progress: 0 })
+  const [view, setView] = useState({ scale: 0, label: 'Готовься', phaseLeft: 0, cycle: 1, progress: 0, pulse: 0 })
   const idle = useIdleBreath(stage === 'ready' || stage === 'done')
 
   const raf = useRef(0)
   const baseStart = useRef(0)
   const elapsedBefore = useRef(0)
   const lastPhase = useRef(-1)
+  const pulseRef = useRef(0)
   const actualSeconds = useRef(0)
 
   // Drive the breath timeline while running.
@@ -64,14 +66,13 @@ export function BreathingSession({
       const from = pattern[(pi - 1 + pattern.length) % pattern.length].scaleTo
       const scale = from + (phase.scaleTo - from) * easeInOutSine(prog)
 
-      // cue on each new phase
+      // cue + exhale ripple on each new phase
       const phaseKey = cycleIdx * pattern.length + pi
       if (phaseKey !== lastPhase.current) {
         lastPhase.current = phaseKey
-        if (settings.cueTones) {
-          const dir = phase.scaleTo > from ? 'rise' : phase.scaleTo < from ? 'fall' : 'hold'
-          audio.cue(dir)
-        }
+        const dir = phase.scaleTo > from ? 'rise' : phase.scaleTo < from ? 'fall' : 'hold'
+        if (settings.cueTones) audio.cue(dir)
+        if (dir === 'fall') pulseRef.current += 1 // exhale → drop a ripple
       }
 
       setView({
@@ -80,6 +81,7 @@ export function BreathingSession({
         phaseLeft: Math.ceil(phase.seconds - phaseElapsed),
         cycle: Math.min(cycleIdx + 1, totalCycles),
         progress: t / totalDur,
+        pulse: pulseRef.current,
       })
       raf.current = requestAnimationFrame(tick)
     }
@@ -101,11 +103,13 @@ export function BreathingSession({
   }, [])
 
   async function begin() {
+    requestTilt()
     await audio.ensure()
     audio.bell(528, 0.45)
     if (settings.ambient) audio.startAmbient()
     elapsedBefore.current = 0
     lastPhase.current = -1
+    pulseRef.current = 0
     baseStart.current = performance.now()
     setStage('running')
   }
@@ -174,7 +178,12 @@ export function BreathingSession({
           <div className="flex flex-col items-center">
             <div className="relative grid place-items-center">
               <ProgressRing progress={view.progress} accent={practice.accent} />
-              <Orb scale={view.scale} accent={practice.accent}>
+              <Orb
+                scale={view.scale}
+                accent={practice.accent}
+                pulse={view.pulse}
+                audioReactive={settings.ambient}
+              >
                 <div className="flex flex-col items-center">
                   <span className="font-serif text-3xl leading-none text-foam">{view.label}</span>
                   <span className="mt-2 text-sm tabular-nums text-foam/55">{view.phaseLeft}</span>
@@ -216,7 +225,7 @@ export function BreathingSession({
             <div className="mt-8 flex items-center gap-3">
               <button
                 onClick={() => {
-                  setView({ scale: 0, label: 'Готовься', phaseLeft: 0, cycle: 1, progress: 0 })
+                  setView({ scale: 0, label: 'Готовься', phaseLeft: 0, cycle: 1, progress: 0, pulse: 0 })
                   setStage('ready')
                 }}
                 className="rounded-full px-6 py-3 text-sm text-foam/85 transition-all duration-500 ease-fluid active:scale-95 glass"

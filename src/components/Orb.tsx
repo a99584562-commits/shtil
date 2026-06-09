@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { audio } from '../lib/audio'
 
 const ACCENTS = {
   cyan: { core: '#5fd6d0', halo: 'rgba(95,214,208,0.55)', ring: 'rgba(95,214,208,0.35)' },
@@ -7,25 +9,85 @@ const ACCENTS = {
 }
 
 /**
- * The breathing orb. `scale` (0..1) is driven by the parent each frame, so the
- * size follows the breath exactly. Text overlay (`children`) stays unscaled and
- * crisp at the centre.
+ * The breathing orb. `scale` (0..1) is driven by the parent each frame.
+ * `pulse` — increment it to release a ripple ring (e.g. on each exhale).
+ * `audioReactive` — glow shimmers with the ambient loudness.
  */
 export function Orb({
   scale,
   accent = 'cyan',
+  pulse = 0,
+  audioReactive = false,
   children,
 }: {
   scale: number
   accent?: keyof typeof ACCENTS
+  pulse?: number
+  audioReactive?: boolean
   children?: ReactNode
 }) {
   const a = ACCENTS[accent]
-  // Map breath 0..1 → visual 0.58..1.06.
   const s = 0.58 + Math.min(Math.max(scale, 0), 1) * 0.48
+
+  // Exhale ripples
+  const [ripples, setRipples] = useState<number[]>([])
+  const rid = useRef(0)
+  useEffect(() => {
+    if (!pulse) return
+    const id = rid.current++
+    setRipples((prev) => [...prev.slice(-3), id])
+    const t = window.setTimeout(() => setRipples((prev) => prev.filter((p) => p !== id)), 2500)
+    return () => clearTimeout(t)
+  }, [pulse])
+
+  // Audio-reactive glow — write straight to the DOM each frame (no re-render).
+  const glowRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!audioReactive) return
+    let raf = 0
+    let smooth = 0
+    const tick = () => {
+      smooth += (audio.level() - smooth) * 0.18
+      if (glowRef.current) {
+        glowRef.current.style.opacity = (0.12 + smooth * 0.6).toFixed(3)
+        glowRef.current.style.transform = `scale(${(s * (1 + smooth * 0.18)).toFixed(3)})`
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [audioReactive, s])
 
   return (
     <div className="relative grid place-items-center" style={{ width: 280, height: 280 }}>
+      {/* exhale ripples */}
+      {ripples.map((id) => (
+        <span
+          key={id}
+          className="pointer-events-none absolute rounded-full"
+          style={{
+            width: 210,
+            height: 210,
+            border: `1px solid ${a.ring}`,
+            animation: 'orbRipple 2.4s cubic-bezier(0.22,0.61,0.36,1) forwards',
+          }}
+        />
+      ))}
+
+      {/* audio-reactive glow */}
+      {audioReactive && (
+        <div
+          ref={glowRef}
+          className="pointer-events-none absolute rounded-full blur-2xl"
+          style={{
+            width: 240,
+            height: 240,
+            background: `radial-gradient(circle, ${a.halo} 0%, transparent 60%)`,
+            opacity: 0.12,
+          }}
+        />
+      )}
+
       {/* soft outer halo */}
       <div
         className="absolute rounded-full blur-2xl"
@@ -40,12 +102,7 @@ export function Orb({
       {/* outer hairline ring */}
       <div
         className="absolute rounded-full"
-        style={{
-          width: 240,
-          height: 240,
-          border: `1px solid ${a.ring}`,
-          transform: `scale(${s})`,
-        }}
+        style={{ width: 240, height: 240, border: `1px solid ${a.ring}`, transform: `scale(${s})` }}
       />
       {/* glass body */}
       <div

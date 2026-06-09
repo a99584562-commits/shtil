@@ -6,6 +6,7 @@ import { TopBar } from '../components/TopBar'
 import { audio } from '../lib/audio'
 import { logSession, useSettings } from '../lib/store'
 import { useIdleBreath } from '../lib/useIdleBreath'
+import { requestTilt } from '../lib/parallax'
 
 type Stage = 'ready' | 'running' | 'paused' | 'done'
 
@@ -22,13 +23,15 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
   const settings = useSettings()
   const [minutes, setMinutes] = useState(practice.minutes)
   const [stage, setStage] = useState<Stage>('ready')
-  const [view, setView] = useState({ scale: 0.5, remaining: practice.minutes * 60, guideIdx: 0, progress: 0 })
+  const [view, setView] = useState({ scale: 0.5, remaining: practice.minutes * 60, guideIdx: 0, progress: 0, pulse: 0 })
   const idle = useIdleBreath(stage === 'ready' || stage === 'done')
 
   const raf = useRef(0)
   const baseStart = useRef(0)
   const elapsedBefore = useRef(0)
   const lastBellMin = useRef(0)
+  const lastMarker = useRef(0)
+  const pulseRef = useRef(0)
   const guide = practice.guide ?? []
 
   useEffect(() => {
@@ -57,7 +60,14 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
         audio.bell(432, 0.32)
       }
 
-      setView({ scale, remaining, guideIdx, progress: t / total })
+      // release a ripple at the start of each exhale (second half of the breath)
+      const marker = Math.floor((t / BREATH_PERIOD) * 2)
+      if (marker !== lastMarker.current) {
+        lastMarker.current = marker
+        if (marker % 2 === 1) pulseRef.current += 1
+      }
+
+      setView({ scale, remaining, guideIdx, progress: t / total, pulse: pulseRef.current })
       raf.current = requestAnimationFrame(tick)
     }
     raf.current = requestAnimationFrame(tick)
@@ -76,13 +86,16 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
   }, [])
 
   async function begin() {
+    requestTilt()
     await audio.ensure()
     audio.bell(528, 0.45)
     if (settings.ambient) audio.startAmbient()
     elapsedBefore.current = 0
     lastBellMin.current = 0
+    lastMarker.current = 0
+    pulseRef.current = 0
     baseStart.current = performance.now()
-    setView({ scale: 0.5, remaining: minutes * 60, guideIdx: 0, progress: 0 })
+    setView({ scale: 0.5, remaining: minutes * 60, guideIdx: 0, progress: 0, pulse: 0 })
     setStage('running')
   }
 
@@ -158,7 +171,12 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
           <div className="flex w-full max-w-sm flex-col items-center">
             <div className="relative grid place-items-center">
               <ProgressRing progress={view.progress} accent={practice.accent} />
-              <Orb scale={view.scale} accent={practice.accent}>
+              <Orb
+                scale={view.scale}
+                accent={practice.accent}
+                pulse={view.pulse}
+                audioReactive={settings.ambient}
+              >
                 <span className="font-serif text-4xl tabular-nums text-foam">{mmss(view.remaining)}</span>
               </Orb>
             </div>

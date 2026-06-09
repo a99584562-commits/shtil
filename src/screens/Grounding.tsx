@@ -5,6 +5,7 @@ import { TopBar } from '../components/TopBar'
 import { audio } from '../lib/audio'
 import { logSession, useSettings } from '../lib/store'
 import { useIdleBreath } from '../lib/useIdleBreath'
+import { requestTilt } from '../lib/parallax'
 
 type Stage = 'ready' | 'running' | 'done'
 
@@ -27,6 +28,7 @@ export function Grounding({ practice, onDone }: { practice: Practice; onDone: ()
   const step = STEPS[stepIdx]
 
   async function begin() {
+    requestTilt()
     await audio.ensure()
     audio.bell(528, 0.4)
     started.current = performance.now()

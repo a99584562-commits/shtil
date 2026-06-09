@@ -11,6 +11,8 @@ class AudioEngine {
   private ctx: Maybe<AudioContext> = null
   private master: Maybe<GainNode> = null
   private ambient: Maybe<{ stop: () => void }> = null
+  private analyser: Maybe<AnalyserNode> = null
+  private levelBuf: Uint8Array<ArrayBuffer> | null = null
 
   /** Create/resume the context + unlock iOS. Call from a user gesture. */
   async ensure(): Promise<boolean> {
@@ -22,6 +24,11 @@ class AudioEngine {
       this.master = this.ctx.createGain()
       this.master.gain.value = 1
       this.master.connect(this.ctx.destination)
+      // Tap the master for audio-reactive visuals (orb glow).
+      this.analyser = this.ctx.createAnalyser()
+      this.analyser.fftSize = 256
+      this.levelBuf = new Uint8Array(this.analyser.frequencyBinCount)
+      this.master.connect(this.analyser)
     }
     if (this.ctx.state === 'suspended') {
       try {
@@ -220,6 +227,19 @@ class AudioEngine {
 
   get ambientActive(): boolean {
     return this.ambient !== null
+  }
+
+  /** Current output loudness 0..1 (RMS), for audio-reactive visuals. */
+  level(): number {
+    if (!this.analyser || !this.levelBuf) return 0
+    this.analyser.getByteTimeDomainData(this.levelBuf)
+    let sum = 0
+    for (let i = 0; i < this.levelBuf.length; i++) {
+      const v = (this.levelBuf[i] - 128) / 128
+      sum += v * v
+    }
+    const rms = Math.sqrt(sum / this.levelBuf.length)
+    return Math.min(1, rms * 3.2)
   }
 }
 
