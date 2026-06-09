@@ -1,0 +1,37 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0b4250"/>
+      <stop offset="0.55" stop-color="#08303d"/>
+      <stop offset="1" stop-color="#06222b"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="0.5" cy="0.42" r="0.62">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.35" stop-color="#9fe9e3"/>
+      <stop offset="0.75" stop-color="#3fb9b2"/>
+      <stop offset="1" stop-color="#1d7d78" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#5fd6d0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5fd6d0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+
+  <!-- horizon glow -->
+  <ellipse cx="256" cy="312" rx="240" ry="40" fill="url(#halo)"/>
+
+  <!-- halo behind orb -->
+  <circle cx="256" cy="214" r="150" fill="url(#halo)"/>
+
+  <!-- moon / breath orb -->
+  <circle cx="256" cy="214" r="96" fill="url(#orb)"/>
+  <circle cx="256" cy="214" r="96" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="2"/>
+
+  <!-- calm water -->
+  <g stroke="#9fe6e1" stroke-linecap="round" fill="none">
+    <path d="M96 352c28 0 28-16 56-16s28 16 56 16 28-16 56-16 28 16 56 16 28-16 56-16" stroke-opacity="0.55" stroke-width="7"/>
+    <path d="M120 392c24 0 24-13 48-13s24 13 48 13 24-13 48-13 24 13 48 13 24-13 48-13" stroke-opacity="0.32" stroke-width="6"/>
+  </g>
+</svg>

@@ -1,0 +1,120 @@
+import { useSyncExternalStore } from 'react'
+import type { SessionLog, Settings } from '../types'
+
+const SESSIONS_KEY = 'shtil.sessions.v1'
+const SETTINGS_KEY = 'shtil.settings.v1'
+
+const DEFAULT_SETTINGS: Settings = {
+  ambient: true,
+  cueTones: true,
+  intervalBell: false,
+  reduceMotion: false,
+}
+
+function read<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return fallback
+    return { ...fallback, ...(JSON.parse(raw) as object) } as T
+  } catch {
+    return fallback
+  }
+}
+
+function readArray<T>(key: string): T[] {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as T[]) : []
+  } catch {
+    return []
+  }
+}
+
+/** Minimal reactive store backed by localStorage, shared across components. */
+function createStore<T>(key: string, initial: T) {
+  let value = initial
+  const listeners = new Set<() => void>()
+  return {
+    get: () => value,
+    set: (next: T) => {
+      value = next
+      try {
+        localStorage.setItem(key, JSON.stringify(next))
+      } catch {
+        /* storage full or unavailable — keep in-memory state */
+      }
+      listeners.forEach((l) => l())
+    },
+    subscribe: (l: () => void) => {
+      listeners.add(l)
+      return () => listeners.delete(l)
+    },
+  }
+}
+
+const sessionsStore = createStore<SessionLog[]>(SESSIONS_KEY, readArray<SessionLog>(SESSIONS_KEY))
+const settingsStore = createStore<Settings>(SETTINGS_KEY, read(SETTINGS_KEY, DEFAULT_SETTINGS))
+
+export function useSessions(): SessionLog[] {
+  return useSyncExternalStore(sessionsStore.subscribe, sessionsStore.get, () => [])
+}
+
+export function useSettings(): Settings {
+  return useSyncExternalStore(settingsStore.subscribe, settingsStore.get, () => DEFAULT_SETTINGS)
+}
+
+export function updateSettings(patch: Partial<Settings>) {
+  settingsStore.set({ ...settingsStore.get(), ...patch })
+}
+
+export function logSession(entry: Omit<SessionLog, 'id' | 'ts'>) {
+  // Ignore trivially short sessions (e.g. opened and closed instantly).
+  if (entry.seconds < 5) return
+  const ts = Date.now()
+  const log: SessionLog = { ...entry, id: `${ts}-${Math.round(entry.seconds)}`, ts }
+  sessionsStore.set([log, ...sessionsStore.get()])
+}
+
+// ---- Derived stats -------------------------------------------------------
+
+function dayKey(ts: number): string {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+}
+
+export interface Stats {
+  streak: number
+  totalSessions: number
+  totalMinutes: number
+  todaySessions: number
+  practiced: Set<string> // dayKeys with at least one session
+}
+
+export function computeStats(sessions: SessionLog[]): Stats {
+  const practiced = new Set(sessions.map((s) => dayKey(s.ts)))
+  const totalSeconds = sessions.reduce((sum, s) => sum + s.seconds, 0)
+  const todayKey = dayKey(Date.now())
+  const todaySessions = sessions.filter((s) => dayKey(s.ts) === todayKey).length
+
+  // Streak: consecutive days (ending today or yesterday) with a session.
+  let streak = 0
+  const cursor = new Date()
+  // Allow the streak to still count if nothing done yet today but yesterday was.
+  if (!practiced.has(dayKey(cursor.getTime()))) {
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  while (practiced.has(dayKey(cursor.getTime()))) {
+    streak += 1
+    cursor.setDate(cursor.getDate() - 1)
+  }
+
+  return {
+    streak,
+    totalSessions: sessions.length,
+    totalMinutes: Math.round(totalSeconds / 60),
+    todaySessions,
+    practiced,
+  }
+}
