@@ -1,5 +1,5 @@
 import type { Practice } from '../types'
-import { WaveIcon, CircleIcon, HandIcon, SproutIcon } from './Icons'
+import { WaveIcon, BreathIcon, HandIcon, SproutIcon, ArrowIcon } from './Icons'
 
 const ACCENT_GLOW: Record<Practice['accent'], string> = {
   cyan: 'rgba(95,214,208,0.22)',
@@ -11,11 +11,17 @@ const ACCENT_DOT: Record<Practice['accent'], string> = {
   sky: '#8fc7e0',
   dawn: '#f4b88f',
 }
+// Tinted icon enclosure so each card reads by time of day at a glance.
+const ACCENT_ICON: Record<Practice['accent'], { bg: string; border: string; text: string }> = {
+  cyan: { bg: 'rgba(95,214,208,0.12)', border: 'rgba(95,214,208,0.30)', text: '#7fe3dd' },
+  sky: { bg: 'rgba(143,199,224,0.12)', border: 'rgba(143,199,224,0.30)', text: '#a9d8ec' },
+  dawn: { bg: 'rgba(244,184,143,0.12)', border: 'rgba(244,184,143,0.30)', text: '#f6c6a3' },
+}
 
 function KindIcon({ practice, className }: { practice: Practice; className?: string }) {
   switch (practice.kind) {
     case 'breathing':
-      return <CircleIcon className={className} />
+      return <BreathIcon className={className} />
     case 'timer':
       return <SproutIcon className={className} />
     case 'grounding':
@@ -36,6 +42,7 @@ export function PracticeCard({
 }) {
   const glow = ACCENT_GLOW[practice.accent]
   const dot = ACCENT_DOT[practice.accent]
+  const icon = ACCENT_ICON[practice.accent]
 
   // Double-bezel: outer tray + inner glass plate.
   return (
@@ -54,8 +61,8 @@ export function PracticeCard({
         >
           <div className="flex items-start gap-4">
             <div
-              className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-full text-foam/90 transition-transform duration-700 ease-fluid group-hover:scale-105"
-              style={{ background: 'rgba(207,238,240,0.08)', border: '1px solid rgba(207,238,240,0.12)' }}
+              className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform duration-700 ease-fluid group-hover:scale-105"
+              style={{ background: icon.bg, border: `1px solid ${icon.border}`, color: icon.text }}
             >
               <KindIcon practice={practice} />
             </div>
@@ -63,26 +70,31 @@ export function PracticeCard({
               <h3
                 className={
                   prominent
-                    ? 'font-serif text-2xl leading-tight text-foam'
-                    : 'font-serif text-xl leading-tight text-foam'
+                    ? 'font-serif text-2xl leading-tight tracking-tight text-foam'
+                    : 'font-serif text-xl leading-tight tracking-tight text-foam'
                 }
               >
                 {practice.title}
               </h3>
-              <p className="mt-1 text-[13.5px] leading-snug text-foam/65">{practice.tagline}</p>
+              <p className="mt-1 font-serif text-[14px] italic leading-snug text-foam/60">
+                {practice.tagline}
+              </p>
               <div className="mt-3 flex items-center gap-2 text-[11px] text-foam/50">
-                <span
-                  className="inline-block h-1.5 w-1.5 rounded-full"
-                  style={{ background: dot }}
-                />
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
                 <span>~{practice.minutes} мин</span>
               </div>
             </div>
           </div>
           {prominent && (
-            <p className="mt-4 border-t border-foam/10 pt-3 text-[12.5px] leading-relaxed text-foam/55">
-              {practice.science}
-            </p>
+            <div className="mt-4 flex items-center justify-between gap-4 border-t border-foam/10 pt-3">
+              <p className="text-[12.5px] leading-relaxed text-foam/55">{practice.science}</p>
+              <span
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform duration-700 ease-fluid group-hover:translate-x-0.5"
+                style={{ background: icon.bg, border: `1px solid ${icon.border}`, color: icon.text }}
+              >
+                <ArrowIcon />
+              </span>
+            </div>
           )}
         </div>
       </div>

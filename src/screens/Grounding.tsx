@@ -4,6 +4,7 @@ import { Orb } from '../components/Orb'
 import { TopBar } from '../components/TopBar'
 import { audio } from '../lib/audio'
 import { logSession, useSettings } from '../lib/store'
+import { useIdleBreath } from '../lib/useIdleBreath'
 
 type Stage = 'ready' | 'running' | 'done'
 
@@ -21,6 +22,7 @@ export function Grounding({ practice, onDone }: { practice: Practice; onDone: ()
   const [stepIdx, setStepIdx] = useState(0)
   const [marked, setMarked] = useState(0)
   const started = useRef(0)
+  const idle = useIdleBreath(stage === 'ready' || stage === 'done')
 
   const step = STEPS[stepIdx]
 
@@ -69,10 +71,10 @@ export function Grounding({ practice, onDone }: { practice: Practice; onDone: ()
       <div className="flex flex-1 flex-col items-center justify-center px-6">
         {stage === 'ready' && (
           <div className="flex flex-col items-center text-center animate-fadeUp">
-            <Orb scale={0.5} accent={practice.accent}>
+            <Orb scale={idle} accent={practice.accent}>
               <span className="font-serif text-3xl text-foam/90">5·4·3·2·1</span>
             </Orb>
-            <h2 className="mt-8 font-serif text-3xl text-foam">{practice.title}</h2>
+            <h2 className="mt-8 font-serif text-3xl tracking-tight text-foam">{practice.title}</h2>
             <p className="mt-2 max-w-xs text-[14px] leading-relaxed text-foam/60">
               Спокойно, без спешки. Замечай по одному и отмечай касанием.
             </p>
@@ -124,10 +126,10 @@ export function Grounding({ practice, onDone }: { practice: Practice; onDone: ()
 
         {stage === 'done' && (
           <div className="flex flex-col items-center text-center animate-fadeUp">
-            <Orb scale={0.32} accent={practice.accent}>
+            <Orb scale={idle} accent={practice.accent}>
               <span className="font-serif text-2xl text-foam/90">Здесь</span>
             </Orb>
-            <h2 className="mt-8 font-serif text-3xl text-foam">Ты вернулся в момент</h2>
+            <h2 className="mt-8 font-serif text-3xl tracking-tight text-foam">Ты вернулся в момент</h2>
             <p className="mt-2 max-w-xs text-[13.5px] leading-snug text-foam/55">
               Внимание снова в теле и в комнате, а не в ленте.
             </p>

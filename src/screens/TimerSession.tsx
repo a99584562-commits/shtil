@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Practice } from '../types'
 import { Orb } from '../components/Orb'
+import { ProgressRing } from '../components/ProgressRing'
 import { TopBar } from '../components/TopBar'
 import { audio } from '../lib/audio'
 import { logSession, useSettings } from '../lib/store'
+import { useIdleBreath } from '../lib/useIdleBreath'
 
 type Stage = 'ready' | 'running' | 'paused' | 'done'
 
@@ -20,7 +22,8 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
   const settings = useSettings()
   const [minutes, setMinutes] = useState(practice.minutes)
   const [stage, setStage] = useState<Stage>('ready')
-  const [view, setView] = useState({ scale: 0.5, remaining: practice.minutes * 60, guideIdx: 0 })
+  const [view, setView] = useState({ scale: 0.5, remaining: practice.minutes * 60, guideIdx: 0, progress: 0 })
+  const idle = useIdleBreath(stage === 'ready' || stage === 'done')
 
   const raf = useRef(0)
   const baseStart = useRef(0)
@@ -54,7 +57,7 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
         audio.bell(432, 0.32)
       }
 
-      setView({ scale, remaining, guideIdx })
+      setView({ scale, remaining, guideIdx, progress: t / total })
       raf.current = requestAnimationFrame(tick)
     }
     raf.current = requestAnimationFrame(tick)
@@ -79,7 +82,7 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
     elapsedBefore.current = 0
     lastBellMin.current = 0
     baseStart.current = performance.now()
-    setView({ scale: 0.5, remaining: minutes * 60, guideIdx: 0 })
+    setView({ scale: 0.5, remaining: minutes * 60, guideIdx: 0, progress: 0 })
     setStage('running')
   }
 
@@ -121,10 +124,10 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
       <div className="flex flex-1 flex-col items-center justify-center px-6">
         {stage === 'ready' && (
           <div className="flex w-full max-w-xs flex-col items-center text-center animate-fadeUp">
-            <Orb scale={0.45} accent={practice.accent}>
+            <Orb scale={idle} accent={practice.accent}>
               <span className="font-serif text-2xl text-foam/90">{minutes}<span className="text-base text-foam/50"> мин</span></span>
             </Orb>
-            <h2 className="mt-8 font-serif text-3xl text-foam">{practice.title}</h2>
+            <h2 className="mt-8 font-serif text-3xl tracking-tight text-foam">{practice.title}</h2>
             <p className="mt-2 text-[13.5px] leading-snug text-foam/55">{practice.tagline}</p>
 
             <div className="mt-7 flex flex-wrap justify-center gap-2">
@@ -153,9 +156,12 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
 
         {(stage === 'running' || stage === 'paused') && (
           <div className="flex w-full max-w-sm flex-col items-center">
-            <Orb scale={view.scale} accent={practice.accent}>
-              <span className="font-serif text-4xl tabular-nums text-foam">{mmss(view.remaining)}</span>
-            </Orb>
+            <div className="relative grid place-items-center">
+              <ProgressRing progress={view.progress} accent={practice.accent} />
+              <Orb scale={view.scale} accent={practice.accent}>
+                <span className="font-serif text-4xl tabular-nums text-foam">{mmss(view.remaining)}</span>
+              </Orb>
+            </div>
             {guide.length > 0 && (
               <p
                 key={view.guideIdx}
@@ -186,10 +192,10 @@ export function TimerSession({ practice, onDone }: { practice: Practice; onDone:
 
         {stage === 'done' && (
           <div className="flex flex-col items-center text-center animate-fadeUp">
-            <Orb scale={0.3} accent={practice.accent}>
+            <Orb scale={idle} accent={practice.accent}>
               <span className="font-serif text-2xl text-foam/90">Готово</span>
             </Orb>
-            <h2 className="mt-8 font-serif text-3xl text-foam">{minutes} минут тишины</h2>
+            <h2 className="mt-8 font-serif text-3xl tracking-tight text-foam">{minutes} минут тишины</h2>
             <p className="mt-2 max-w-xs text-[13.5px] leading-snug text-foam/55">
               Побудь ещё пару секунд в этом состоянии, прежде чем вернуться.
             </p>

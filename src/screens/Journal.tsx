@@ -36,7 +36,7 @@ export function Journal({ onBack }: { onBack: () => void }) {
       <TopBar onBack={onBack} title="Дневник" />
 
       <div className="mt-4 animate-fadeUp">
-        <h1 className="px-1 font-serif text-[30px] leading-tight text-foam">Твоя практика</h1>
+        <h1 className="px-1 font-serif text-[30px] leading-tight tracking-tight text-foam">Твоя практика</h1>
 
         {/* stat trio */}
         <div className="mt-5 grid grid-cols-3 gap-3">

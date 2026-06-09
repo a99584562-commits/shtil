@@ -55,6 +55,19 @@ export const CircleIcon = (p: P) => (
   </Svg>
 )
 
+export const BreathIcon = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.2" />
+    <circle cx="12" cy="12" r="3.4" />
+  </Svg>
+)
+
+export const ArrowIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M5 12h13M12.5 6l6 6-6 6" />
+  </Svg>
+)
+
 export const BellIcon = (p: P) => (
   <Svg {...p}>
     <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" />

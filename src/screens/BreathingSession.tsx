@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Practice } from '../types'
 import { Orb } from '../components/Orb'
+import { ProgressRing } from '../components/ProgressRing'
 import { TopBar } from '../components/TopBar'
 import { audio } from '../lib/audio'
 import { logSession, useSettings } from '../lib/store'
+import { useIdleBreath } from '../lib/useIdleBreath'
 
 type Stage = 'ready' | 'running' | 'paused' | 'done'
 
@@ -23,7 +25,8 @@ export function BreathingSession({
   const totalDur = cycleDur * totalCycles
 
   const [stage, setStage] = useState<Stage>('ready')
-  const [view, setView] = useState({ scale: 0, label: 'Готовься', phaseLeft: 0, cycle: 1 })
+  const [view, setView] = useState({ scale: 0, label: 'Готовься', phaseLeft: 0, cycle: 1, progress: 0 })
+  const idle = useIdleBreath(stage === 'ready' || stage === 'done')
 
   const raf = useRef(0)
   const baseStart = useRef(0)
@@ -76,6 +79,7 @@ export function BreathingSession({
         label: phase.label,
         phaseLeft: Math.ceil(phase.seconds - phaseElapsed),
         cycle: Math.min(cycleIdx + 1, totalCycles),
+        progress: t / totalDur,
       })
       raf.current = requestAnimationFrame(tick)
     }
@@ -148,10 +152,10 @@ export function BreathingSession({
       <div className="flex flex-1 flex-col items-center justify-center px-6">
         {stage === 'ready' && (
           <div className="flex flex-col items-center text-center animate-fadeUp">
-            <Orb scale={0.5} accent={practice.accent}>
+            <Orb scale={idle} accent={practice.accent}>
               <span className="font-serif text-2xl text-foam/90">Дыши</span>
             </Orb>
-            <h2 className="mt-8 font-serif text-3xl text-foam">{practice.title}</h2>
+            <h2 className="mt-8 font-serif text-3xl tracking-tight text-foam">{practice.title}</h2>
             <p className="mt-2 max-w-xs text-[13.5px] capitalize leading-snug text-foam/55">
               {patternSummary}
             </p>
@@ -168,12 +172,15 @@ export function BreathingSession({
 
         {(stage === 'running' || stage === 'paused') && (
           <div className="flex flex-col items-center">
-            <Orb scale={view.scale} accent={practice.accent}>
-              <div className="flex flex-col items-center">
-                <span className="font-serif text-3xl leading-none text-foam">{view.label}</span>
-                <span className="mt-2 text-sm tabular-nums text-foam/55">{view.phaseLeft}</span>
-              </div>
-            </Orb>
+            <div className="relative grid place-items-center">
+              <ProgressRing progress={view.progress} accent={practice.accent} />
+              <Orb scale={view.scale} accent={practice.accent}>
+                <div className="flex flex-col items-center">
+                  <span className="font-serif text-3xl leading-none text-foam">{view.label}</span>
+                  <span className="mt-2 text-sm tabular-nums text-foam/55">{view.phaseLeft}</span>
+                </div>
+              </Orb>
+            </div>
             <p className="mt-8 text-[12px] tabular-nums tracking-widest2 text-foam/45">
               ЦИКЛ {view.cycle} / {totalCycles}
             </p>
@@ -199,17 +206,17 @@ export function BreathingSession({
 
         {stage === 'done' && (
           <div className="flex flex-col items-center text-center animate-fadeUp">
-            <Orb scale={0.32} accent={practice.accent}>
+            <Orb scale={idle} accent={practice.accent}>
               <span className="font-serif text-2xl text-foam/90">Готово</span>
             </Orb>
-            <h2 className="mt-8 font-serif text-3xl text-foam">Хорошо подышали</h2>
+            <h2 className="mt-8 font-serif text-3xl tracking-tight text-foam">Хорошо подышали</h2>
             <p className="mt-2 max-w-xs text-[13.5px] leading-snug text-foam/55">
               {totalCycles} циклов спокойного дыхания. Заметь, как изменилось состояние.
             </p>
             <div className="mt-8 flex items-center gap-3">
               <button
                 onClick={() => {
-                  setView({ scale: 0, label: 'Готовься', phaseLeft: 0, cycle: 1 })
+                  setView({ scale: 0, label: 'Готовься', phaseLeft: 0, cycle: 1, progress: 0 })
                   setStage('ready')
                 }}
                 className="rounded-full px-6 py-3 text-sm text-foam/85 transition-all duration-500 ease-fluid active:scale-95 glass"

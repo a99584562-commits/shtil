@@ -4,6 +4,7 @@ import { Orb } from '../components/Orb'
 import { TopBar } from '../components/TopBar'
 import { audio } from '../lib/audio'
 import { logSession } from '../lib/store'
+import { useIdleBreath } from '../lib/useIdleBreath'
 
 type Stage = 'ready' | 'breath' | 'reflect' | 'done'
 
@@ -21,8 +22,18 @@ export function Pause({ practice, onDone }: { practice: Practice; onDone: () => 
   const [stage, setStage] = useState<Stage>('ready')
   const [view, setView] = useState({ scale: 0, label: 'Вдох' })
   const [doneMsg, setDoneMsg] = useState('')
+  const [picked, setPicked] = useState<Set<string>>(new Set())
   const raf = useRef(0)
   const started = useRef(0)
+  const idle = useIdleBreath(stage === 'ready' || stage === 'done')
+
+  function toggle(r: string) {
+    setPicked((prev) => {
+      const next = new Set(prev)
+      next.has(r) ? next.delete(r) : next.add(r)
+      return next
+    })
+  }
 
   useEffect(() => {
     if (stage !== 'breath') return
@@ -83,10 +94,10 @@ export function Pause({ practice, onDone }: { practice: Practice; onDone: () => 
       <div className="flex flex-1 flex-col items-center justify-center px-6">
         {stage === 'ready' && (
           <div className="flex flex-col items-center text-center animate-fadeUp">
-            <Orb scale={0.45} accent={practice.accent}>
+            <Orb scale={idle} accent={practice.accent}>
               <span className="font-serif text-3xl text-foam/90">Стоп</span>
             </Orb>
-            <h2 className="mt-8 font-serif text-3xl text-foam">Один вдох</h2>
+            <h2 className="mt-8 font-serif text-3xl tracking-tight text-foam">Один вдох</h2>
             <p className="mt-2 max-w-xs text-[14px] leading-relaxed text-foam/60">
               Прежде чем нырнуть в телефон — короткая пауза. Всего один спокойный вдох.
             </p>
@@ -113,18 +124,28 @@ export function Pause({ practice, onDone }: { practice: Practice; onDone: () => 
 
         {stage === 'reflect' && (
           <div className="flex w-full max-w-xs flex-col items-center text-center animate-fadeUp">
-            <h2 className="font-serif text-[28px] leading-tight text-foam">
+            <h2 className="font-serif text-[28px] leading-tight tracking-tight text-foam">
               Зачем мне сейчас телефон?
             </h2>
             <p className="mt-3 text-[13.5px] leading-snug text-foam/55">
-              Просто честно заметь. Не нужно осуждать себя.
+              Отметь, что чувствуешь — честно, без осуждения.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {REFLECTIONS.map((r) => (
-                <span key={r} className="rounded-full px-3.5 py-2 text-[12.5px] text-foam/65 glass">
-                  {r}
-                </span>
-              ))}
+              {REFLECTIONS.map((r) => {
+                const on = picked.has(r)
+                return (
+                  <button
+                    key={r}
+                    onClick={() => toggle(r)}
+                    className={`rounded-full px-3.5 py-2 text-[12.5px] transition-all duration-300 ease-fluid active:scale-95 ${
+                      on ? 'glass-strong text-foam' : 'glass text-foam/65'
+                    }`}
+                    style={on ? { boxShadow: 'inset 0 0 0 1px rgba(95,214,208,0.55)' } : undefined}
+                  >
+                    {r}
+                  </button>
+                )
+              })}
             </div>
             <div className="mt-9 flex w-full flex-col gap-3">
               <button
@@ -146,10 +167,10 @@ export function Pause({ practice, onDone }: { practice: Practice; onDone: () => 
 
         {stage === 'done' && (
           <div className="flex flex-col items-center text-center animate-fadeUp">
-            <Orb scale={0.3} accent={practice.accent}>
+            <Orb scale={idle} accent={practice.accent}>
               <span className="font-serif text-2xl text-foam/90">·</span>
             </Orb>
-            <h2 className="mt-8 max-w-xs font-serif text-2xl leading-snug text-foam">{doneMsg}</h2>
+            <h2 className="mt-8 max-w-xs font-serif text-2xl leading-snug tracking-tight text-foam">{doneMsg}</h2>
             <button
               onClick={onDone}
               className="mt-8 rounded-full px-7 py-3 text-sm font-medium text-sea-900 transition-all duration-500 ease-fluid active:scale-95"

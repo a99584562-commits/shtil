@@ -45,7 +45,7 @@ export function About({ onBack }: { onBack: () => void }) {
       <TopBar onBack={onBack} title="О практиках" />
 
       <div className="mt-4 animate-fadeUp">
-        <h1 className="px-1 font-serif text-[30px] leading-tight text-foam">Почему это работает</h1>
+        <h1 className="px-1 font-serif text-[30px] leading-tight tracking-tight text-foam">Почему это работает</h1>
         <p className="mt-3 px-1 text-[13.5px] leading-relaxed text-foam/60">
           Здесь нет магии — только простые техники с исследовательской базой. Они не лечат, но
           помогают вернуть внимание из телефона в тело и в текущий момент.

@@ -34,6 +34,14 @@ export function Background({ time }: { time: TimeOfDay }) {
           animationDelay: '-9s',
         }}
       />
+      {/* gentle vignette — darkens the edges so attention settles to the centre */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(125% 100% at 50% 42%, transparent 52%, rgba(0,0,0,0.30) 100%)',
+        }}
+      />
       {/* subtle film grain for a physical, non-digital feel */}
       <div
         className="absolute inset-0 opacity-[0.04] mix-blend-soft-light"

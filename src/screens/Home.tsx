@@ -45,8 +45,8 @@ export function Home({
       <header className="pt-safe flex items-start justify-between">
         <div className="animate-fadeUp">
           <p className="eyebrow text-foam/45">{greeting(time)}</p>
-          <h1 className="mt-1 font-serif text-[34px] leading-[1.05] text-foam">Штиль</h1>
-          <p className="mt-2 max-w-[16rem] text-[13.5px] leading-snug text-foam/55">
+          <h1 className="mt-1 font-serif text-[34px] leading-[1.05] tracking-tight text-foam">Штиль</h1>
+          <p className="mt-2 max-w-[17rem] font-serif text-[15px] italic leading-snug text-foam/60">
             {subline(time)}
           </p>
         </div>
