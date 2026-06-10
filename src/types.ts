@@ -57,6 +57,23 @@ export interface DiaryEvening {
   goodDeed: string // доброе дело дня
   amazing: string[] // 3 — что прекрасного случилось
   better: string // как сделать день ещё лучше
+  rating?: number // оценка дня 1–5 (0/undefined — не задано)
+}
+
+// Single habit being built alongside the diary (the book's "66 days" idea).
+export interface Habit {
+  name: string
+  startedAt: number
+  days: Record<string, boolean> // dayKey -> done
+}
+
+// Weekly reflection (Wochenrückblick), keyed by the week's Monday day-key.
+export interface WeekReview {
+  week: string
+  good: string // что порадовало
+  learned: string // что усвоил
+  change: string // что хочется изменить
+  updatedAt: number
 }
 
 export interface DiaryEntry {
