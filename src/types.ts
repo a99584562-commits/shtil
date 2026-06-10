@@ -45,3 +45,23 @@ export interface Settings {
   intervalBell: boolean
   reduceMotion: boolean
 }
+
+// "6-minute diary" (Dominik Spenst) — 3 min morning + 3 min evening.
+export interface DiaryMorning {
+  gratitude: string[] // 3 — за что я благодарен
+  great: string[] // 3 — что сделает день прекрасным
+  affirmation: string // позитивное самоутверждение
+}
+
+export interface DiaryEvening {
+  goodDeed: string // доброе дело дня
+  amazing: string[] // 3 — что прекрасного случилось
+  better: string // как сделать день ещё лучше
+}
+
+export interface DiaryEntry {
+  date: string // day key 'YYYY-M-D'
+  morning?: DiaryMorning
+  evening?: DiaryEvening
+  updatedAt: number
+}

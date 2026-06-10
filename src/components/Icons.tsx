@@ -124,6 +124,13 @@ export const JournalIcon = (p: P) => (
   </Svg>
 )
 
+export const PenIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M5 19l2.6-.6L18 8a1.9 1.9 0 0 0-2.7-2.7L4.9 15.7 4.3 18.3a0.6 0.6 0 0 0 .7.7Z" />
+    <path d="M13.5 6.8l3.4 3.4" />
+  </Svg>
+)
+
 export const InfoIcon = (p: P) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="9" />

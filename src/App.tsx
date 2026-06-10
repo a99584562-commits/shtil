@@ -9,6 +9,7 @@ import { Grounding } from './screens/Grounding'
 import { Pause } from './screens/Pause'
 import { Journal } from './screens/Journal'
 import { About } from './screens/About'
+import { Diary } from './screens/Diary'
 import { timeOfDay } from './lib/time'
 import { useSettings } from './lib/store'
 import type { Practice } from './types'
@@ -18,6 +19,7 @@ type Route =
   | { name: 'session'; practice: Practice }
   | { name: 'journal' }
   | { name: 'about' }
+  | { name: 'diary' }
 
 export default function App() {
   const settings = useSettings()
@@ -70,11 +72,13 @@ export default function App() {
             onOpen={open}
             onJournal={() => setRoute({ name: 'journal' })}
             onAbout={() => setRoute({ name: 'about' })}
+            onDiary={() => setRoute({ name: 'diary' })}
           />
         )}
         {route.name === 'session' && renderSession(route.practice)}
         {route.name === 'journal' && <Journal onBack={home} />}
         {route.name === 'about' && <About onBack={home} />}
+        {route.name === 'diary' && <Diary time={time} onBack={home} />}
       </main>
     </>
   )

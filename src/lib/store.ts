@@ -1,8 +1,9 @@
 import { useSyncExternalStore } from 'react'
-import type { SessionLog, Settings } from '../types'
+import type { DiaryEntry, SessionLog, Settings } from '../types'
 
 const SESSIONS_KEY = 'shtil.sessions.v1'
 const SETTINGS_KEY = 'shtil.settings.v1'
+const DIARY_KEY = 'shtil.diary.v1'
 
 const DEFAULT_SETTINGS: Settings = {
   ambient: true,
@@ -67,6 +68,27 @@ export function useSettings(): Settings {
 
 export function updateSettings(patch: Partial<Settings>) {
   settingsStore.set({ ...settingsStore.get(), ...patch })
+}
+
+// ---- 6-minute diary ------------------------------------------------------
+
+type DiaryMap = Record<string, DiaryEntry>
+const EMPTY_DIARY: DiaryMap = {}
+const diaryStore = createStore<DiaryMap>(DIARY_KEY, read(DIARY_KEY, {} as DiaryMap))
+
+export function useDiary(): DiaryMap {
+  return useSyncExternalStore(diaryStore.subscribe, diaryStore.get, () => EMPTY_DIARY)
+}
+
+export function diaryDayKey(d = new Date()): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+}
+
+/** Merge a patch into a day's entry (morning and/or evening). */
+export function saveDiaryEntry(date: string, patch: Partial<DiaryEntry>) {
+  const cur = diaryStore.get()
+  const existing = cur[date] ?? { date, updatedAt: 0 }
+  diaryStore.set({ ...cur, [date]: { ...existing, ...patch, date, updatedAt: Date.now() } })
 }
 
 export function logSession(entry: Omit<SessionLog, 'id' | 'ts'>) {

@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { PRACTICES, practiceById } from '../data/practices'
 import { greeting, subline } from '../lib/time'
-import { computeStats, useSessions } from '../lib/store'
+import { computeStats, useSessions, useDiary, diaryDayKey } from '../lib/store'
 import type { Practice, TimeOfDay } from '../types'
 import { PracticeCard } from '../components/PracticeCard'
-import { FlameIcon, JournalIcon, InfoIcon, CircleIcon } from '../components/Icons'
+import { FlameIcon, JournalIcon, InfoIcon, CircleIcon, PenIcon, CheckIcon } from '../components/Icons'
+
+const filled = (...vals: (string | string[] | undefined)[]) =>
+  vals.flat().some((v) => typeof v === 'string' && v.trim().length > 0)
 
 const GROUPS: { key: TimeOfDay; label: string; sub: string; ids: string[] }[] = [
   { key: 'morning', label: 'Утро', sub: 'ясность и заряд', ids: ['coherent', 'anchor'] },
@@ -36,14 +39,20 @@ export function Home({
   onOpen,
   onJournal,
   onAbout,
+  onDiary,
 }: {
   time: TimeOfDay
   onOpen: (p: Practice) => void
   onJournal: () => void
   onAbout: () => void
+  onDiary: () => void
 }) {
   const sessions = useSessions()
   const stats = computeStats(sessions)
+  const diary = useDiary()
+  const today = diary[diaryDayKey()]
+  const morningDone = filled(today?.morning?.gratitude, today?.morning?.great, today?.morning?.affirmation)
+  const eveningDone = filled(today?.evening?.amazing, today?.evening?.goodDeed, today?.evening?.better)
   const suggested = practiceById(SUGGESTION[time]) ?? PRACTICES[0]
   const nowGroup = displayGroup(time)
 
@@ -176,9 +185,58 @@ export function Home({
         </div>
       </section>
 
+      {/* 6-minute diary */}
+      <section className="mt-9 animate-fadeUp" style={{ animationDelay: '320ms' }}>
+        <button
+          onClick={onDiary}
+          className="group block w-full text-left transition-transform duration-500 ease-fluid active:scale-[0.985]"
+        >
+          <div className="rounded-[2rem] p-1.5 glass">
+            <div
+              className="relative overflow-hidden rounded-[1.625rem] px-5 py-4"
+              style={{ background: 'radial-gradient(120% 100% at 0% 0%, rgba(244,184,143,0.18) 0%, transparent 60%)' }}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform duration-700 ease-fluid group-hover:scale-105"
+                  style={{ background: 'rgba(244,184,143,0.12)', border: '1px solid rgba(244,184,143,0.3)', color: '#f6c6a3' }}
+                >
+                  <PenIcon />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-serif text-xl leading-tight tracking-tight text-foam">Дневник 6 минут</h3>
+                  <p className="mt-1 font-serif text-[14px] italic leading-snug text-foam/60">
+                    3 минуты утром, 3 вечером
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2 border-t border-foam/10 pt-3">
+                <StatusChip label="Утро" done={morningDone} />
+                <StatusChip label="Вечер" done={eveningDone} />
+              </div>
+            </div>
+          </div>
+        </button>
+      </section>
+
       <p className="pb-safe mt-10 text-center text-[11px] leading-relaxed text-foam/35">
         Не медицинская рекомендация. Просто тихое место, чтобы вернуть внимание себе.
       </p>
     </div>
+  )
+}
+
+function StatusChip({ label, done }: { label: string; done: boolean }) {
+  return (
+    <span
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] ${done ? 'text-foam' : 'text-foam/45'}`}
+      style={{
+        background: done ? 'rgba(95,214,208,0.14)' : 'rgba(207,238,240,0.05)',
+        border: `1px solid ${done ? 'rgba(95,214,208,0.3)' : 'rgba(207,238,240,0.1)'}`,
+      }}
+    >
+      {done && <CheckIcon width={13} height={13} />}
+      {label}
+    </span>
   )
 }
